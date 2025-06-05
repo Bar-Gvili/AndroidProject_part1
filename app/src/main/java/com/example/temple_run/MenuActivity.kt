@@ -58,6 +58,10 @@ class MenuActivity: AppCompatActivity() {
             // Optional: Finish this activity if you don't want users to return to it
             finish()
         }
+        binding.buttonLeaderboard.setOnClickListener {
+            val intent = Intent(this, LeaderBoardActivity::class.java)
+            startActivity(intent)
+        }
     }
 
 }

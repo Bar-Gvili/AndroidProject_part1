@@ -5,10 +5,9 @@
     android:layout_height="match_parent"
     tools:context=".Fragments.FragmentHighScoreList">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView_high_scores"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
-
+        tools:listitem="@layout/item_high_score" />
 </FrameLayout>

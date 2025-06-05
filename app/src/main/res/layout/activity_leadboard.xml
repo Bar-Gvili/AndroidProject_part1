@@ -1,32 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_leaderboard_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context=".LeaderBoardActivity"
+    android:layout_margin="20dp">
 
-
-    <!-- Container for the Scores Fragment (Top) -->
     <FrameLayout
-        android:id="@+id/frame_scores_container"
+        android:id="@+id/frame_high_score_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:layout_margin="20dp"/>
 
-        />
-
-    <!-- Separator -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="?android:attr/listDivider" />
-
-    <!-- Container for the Map Fragment (Bottom) -->
     <FrameLayout
-        android:id="@+id/frame_map_container"
+        android:id="@+id/frame_map"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        />
+        android:layout_margin="20dp"/>
+
+    <Button
+        android:id="@+id/button_back_to_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Back to Menu"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"/>
 
 </LinearLayout>
