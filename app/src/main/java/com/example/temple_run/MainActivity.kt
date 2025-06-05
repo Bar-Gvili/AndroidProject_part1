@@ -1,5 +1,11 @@
 package com.example.temple_run
 
+import android.content.Context
+import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -8,50 +14,65 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.get
+import androidx.core.view.size
 import androidx.lifecycle.lifecycleScope
 import com.example.temple_run.logic.gameManager
 import com.example.temple_run.utilies.Constants
-import com.example.temple_run.utilies.SignalManager
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.example.temple_run.databinding.ActivityMainBinding
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
-class MainActivity : AppCompatActivity() {
 
-    private lateinit var main_FAB_left: ExtendedFloatingActionButton
-    private lateinit var main_FAB_right: ExtendedFloatingActionButton
-    private lateinit var main_hearts_layout: Array<ImageView>
-    private lateinit var obstaclesLayout: Array<Array<ImageView>>
+class MainActivity : AppCompatActivity(),SensorEventListener {
+
+    private lateinit var mainHeartsLayout: Array<ImageView>
+    private lateinit var mainGridImages: Array<Array<ImageView>>
     private lateinit var carLayout: Array<ImageView>
-    private lateinit var obstaclePosition: MutableList<MutableList<Int>>
+    private lateinit var mainGridPositions: MutableList<MutableList<Int>>
     private lateinit var gameManager: gameManager
-    private var currentLane: Int = 1
+    private lateinit var gameMode: String
+    private var speed: Long =0
+    private var currentLane: Int = 2
     private var startTime: Long = 0
     private var timerOn: Boolean = false
-
     private var timerJob: Job?=null
+    private var score: Int = 0
 
+    // --- Sensor Related Properties ---
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var lastSensorUpdateTime: Long = 0 // To control update frequency
+    private val sensorUpdateDelay: Long = 100 // Milliseconds, adjust for responsiveness
+    private val tiltThreshold: Float = 3f // Tilt sensitivity, adjust this value (m/s^2)
 
+    private lateinit var binding: ActivityMainBinding
 
 
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
+
+            binding = ActivityMainBinding.inflate(layoutInflater)
             enableEdgeToEdge()
-            setContentView(R.layout.activity_main)
+            setContentView(binding.root)
+            //setContentView(R.layout.activity_main)
             ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
                 val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
                 insets
             }
-
+            //mainImagesGrid[0][0]
             findViews()
-            gameManager = gameManager(main_hearts_layout.size)
-            initViews()
+            //gameManager = gameManager(main_hearts_layout.size)
+            gameManager = gameManager(binding.mainHeartsLayout.size)
+            mainGridPositions =
+                MutableList(Constants.obstacleDimensions.obstacle_row_count){MutableList(Constants.obstacleDimensions.obstacle_col_count){0}}
+            initViewsAndGameSettings()
             refreshUI()
 
         //gameTimer = GameTimer(lifecycleScope)
@@ -61,79 +82,115 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "onResume - Starting timer")
         // Start the timer when the activity comes into the foreground
         startTimer()
+        // Register sensor listener only if in sensor mode and sensor is available
+        if (gameMode == Constants.GAME_MODE_SENSOR && accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+            Log.d("MainActivity", "Accelerometer listener registered.")
+        }
     }
     override fun onPause() {
         super.onPause()
         Log.d("MainActivity", "onPause - Stopping timer")
         // Stop the timer when the activity goes into the background
         stopTimer()
+        // Unregister sensor listener to save power
+        if (gameMode == Constants.GAME_MODE_SENSOR && accelerometer != null) {
+            sensorManager.unregisterListener(this)
+            Log.d("MainActivity", "Accelerometer listener unregistered.")
+        }
     }
 
 
     private fun findViews() {
-        main_FAB_left = findViewById(R.id.main_FAB_left)
-        main_FAB_right = findViewById(R.id.main_FAB_right)
-        carLayout = arrayOf(
-            findViewById(R.id.main_car0),
-            findViewById(R.id.main_car1),
-            findViewById(R.id.main_car2),
-        )
-        main_hearts_layout = arrayOf(
-            findViewById(R.id.main_heart0),
-            findViewById(R.id.main_heart1),
-            findViewById(R.id.main_heart2)
-        )
-        obstaclesLayout = arrayOf(
+        //connect between each imageView to an array so we can access the images
+    carLayout = arrayOf(
+        binding.mainCar0,
+        binding.mainCar1,
+        binding.mainCar2,
+        binding.mainCar3,
+        binding.mainCar4
+    )
+        //connect between each imageView to an array so we can access the images
+    mainHeartsLayout = arrayOf(
+        binding.mainHeart0,
+        binding.mainHeart1,
+        binding.mainHeart2)
+
+
+        //connect between each imageView to a matrix so we can access the images
+    mainGridImages = arrayOf(
             arrayOf(
-                findViewById(R.id.main_obstacle_0_0),
-                findViewById(R.id.main_obstacle_0_1),
-                findViewById(R.id.main_obstacle_0_2)
-            ),
+                binding.mainObstacle00,
+                binding.mainObstacle01,
+                binding.mainObstacle02,
+                binding.mainObstacle03,
+                binding.mainObstacle04,),
             arrayOf(
-                findViewById(R.id.main_obstacle_1_0),
-                findViewById(R.id.main_obstacle_1_1),
-                findViewById(R.id.main_obstacle_1_2)
-            ),
+                binding.mainObstacle10,
+                binding.mainObstacle11,
+                binding.mainObstacle12,
+                binding.mainObstacle13,
+                binding.mainObstacle14,),
             arrayOf(
-                findViewById(R.id.main_obstacle_2_0),
-                findViewById(R.id.main_obstacle_2_1),
-                findViewById(R.id.main_obstacle_2_2)
-            ),
+                binding.mainObstacle20,
+                binding.mainObstacle21,
+                binding.mainObstacle22,
+                binding.mainObstacle23,
+                binding.mainObstacle24,),
             arrayOf(
-                findViewById(R.id.main_obstacle_3_0),
-                findViewById(R.id.main_obstacle_3_1),
-                findViewById(R.id.main_obstacle_3_2)
-            ),
+                binding.mainObstacle30,
+                binding.mainObstacle31,
+                binding.mainObstacle32,
+                binding.mainObstacle33,
+                binding.mainObstacle34,),
             arrayOf(
-                findViewById(R.id.main_obstacle_4_0),
-                findViewById(R.id.main_obstacle_4_1),
-                findViewById(R.id.main_obstacle_4_2)
-            ),
+                binding.mainObstacle40,
+                binding.mainObstacle41,
+                binding.mainObstacle42,
+                binding.mainObstacle43,
+                binding.mainObstacle44,),
             arrayOf(
-                findViewById(R.id.main_obstacle_5_0),
-                findViewById(R.id.main_obstacle_5_1),
-                findViewById(R.id.main_obstacle_5_2)
-            ),
+                binding.mainObstacle50,
+                binding.mainObstacle51,
+                binding.mainObstacle52,
+                binding.mainObstacle53,
+                binding.mainObstacle54,),
             arrayOf(
-                findViewById(R.id.main_obstacle_6_0),
-                findViewById(R.id.main_obstacle_6_1),
-                findViewById(R.id.main_obstacle_6_2)
-            )
-        )
-        obstaclePosition =
-            MutableList(obstaclesLayout.size) { MutableList(obstaclesLayout[0].size) { 0 } } // Initialize with zeros
+                binding.mainObstacle60,
+                binding.mainObstacle61,
+                binding.mainObstacle62,
+                binding.mainObstacle63,
+                binding.mainObstacle64,),
+            arrayOf(
+                binding.mainObstacle70,
+                binding.mainObstacle71,
+                binding.mainObstacle72,
+                binding.mainObstacle73,
+                binding.mainObstacle74,))
+
     }
 
-    private fun initViews() {
-        main_FAB_left.setOnClickListener { view: View -> movementClicked(-1) }
-        main_FAB_right.setOnClickListener { view: View -> movementClicked(1) }
+
+
+    private fun initViewsAndGameSettings() {
+        gameMode = intent.getStringExtra("com.Temple_Run.MenuActivity.GAME_MODE").toString()
+        if(gameMode==Constants.GAME_MODE_SENSOR) {
+            //turn sensors on and hide buttons
+            binding.mainFABLeft.visibility = View.INVISIBLE
+            binding.mainFABRight.visibility = View.INVISIBLE
+            setupSensors()
+        }
+
+        binding.mainFABLeft.setOnClickListener { view: View -> movementOccurred(-1) }
+        binding.mainFABRight.setOnClickListener { view: View -> movementOccurred(1) }
+        speed = intent.getLongExtra("com.Temple_Run.MenuActivity.SPEED", Constants.Timer.SLOW)
 
     }
 
-    private fun movementClicked(direction: Int) //direction=0 left, direction=1 right
-    {
-        currentLane = gameManager.movePlayer(currentLane, direction)
-        refreshCarLayout()
+    private fun movementOccurred(direction: Int) {//direction=0 left, direction=1 right
+            currentLane = gameManager.playerMovement(currentLane, direction)
+            refreshCarLayout()
+
     }
 
     private fun startTimer() {
@@ -145,19 +202,24 @@ class MainActivity : AppCompatActivity() {
                 while (timerOn && isActive ) {
                     try {
                         // 1. Advance Game State based on time
-                        val collisionOccurred = gameManager.moveObstacleGrid(currentLane, obstaclePosition, main_hearts_layout.size)
-
+                        val coinCollision = gameManager.moveObstacleGrid(currentLane, mainGridPositions, mainHeartsLayout.size)
+                        score = score+ 10 + coinCollision
                         // 2. Update the entire UI
                         refreshUI()
-
                         // 3. Wait for the next interval
-                        delay(Constants.Timer.DELAY)
+                        delay(speed)
+                        // 4. check if game ended
+                        if(gameManager.hits==mainHeartsLayout.size)
+                        {
+                            stopTimer()
+                            endGame()
+                        }
+
                     } catch (e: Exception) {
                         Log.e("MainActivity", "Error in game loop: ${e.message}")
                         stopTimer()
                     }
                 }
-
                 timerOn = false
             }
         }
@@ -171,49 +233,124 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshUI() {
+        changeGridImage()
         refreshObstacleLayout()
         refreshCarLayout()
         refreshHeartLayout()
+        binding.MAINScore.text = score.toString()
 
     }
-   private fun refreshObstacleLayout()
-    {
-        for(rowIndex in 0 until obstaclesLayout.size)
-            for(colIndex in 0 until obstaclesLayout[0].size)
+
+   private fun refreshObstacleLayout() {
+        for(rowIndex in 0 until Constants.obstacleDimensions.obstacle_row_count)
+            for(colIndex in 0 until Constants.obstacleDimensions.obstacle_col_count)
             {
-                if(obstaclePosition[rowIndex][colIndex]==1)
-                    obstaclesLayout[rowIndex][colIndex].visibility=View.VISIBLE
+                if(mainGridPositions[rowIndex][colIndex]!=0)
+                    mainGridImages[rowIndex][colIndex].visibility=View.VISIBLE
                 else
-                 obstaclesLayout[rowIndex][colIndex].visibility=View.INVISIBLE
+                 mainGridImages[rowIndex][colIndex].visibility=View.INVISIBLE
             }
-
-
     }
-   private fun refreshCarLayout()
-    {
-        for(i in 0 until carLayout.size)
+
+   private fun refreshCarLayout() {
+        for(i in 0 until Constants.obstacleDimensions.obstacle_col_count)
             if(i==currentLane)
-                carLayout[i].visibility=View.VISIBLE
+                binding.mainLAYOUTCarRow[i].visibility=View.VISIBLE//carLayout[i].visibility=View.VISIBLE
             else
-                carLayout[i].visibility=View.INVISIBLE
+                binding.mainLAYOUTCarRow[i].visibility=View.INVISIBLE//carLayout[i].visibility=View.INVISIBLE
+
     }
    private fun refreshHeartLayout() {
-       val index: Int = main_hearts_layout.size - 1
+       val index: Int = mainHeartsLayout.size - 1
        for (i in 0..index)
        {
            if(i<gameManager.hits)
-               main_hearts_layout[i].visibility=View.INVISIBLE
+               binding.mainHeartsLayout[i].visibility=View.INVISIBLE//main_hearts_layout[i].visibility=View.INVISIBLE
            else
-               main_hearts_layout[i].visibility=View.VISIBLE
+               binding.mainHeartsLayout[i].visibility=View.VISIBLE//main_hearts_layout[i].visibility=View.VISIBLE
        }
-       //endless game part
-       if(gameManager.hits==main_hearts_layout.size)
-       {
 
-           for (i in 0..index)
-               main_hearts_layout[i].visibility=View.VISIBLE
-       }
    }
 
+    // --- SensorEventListener Methods ---
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (gameMode != Constants.GAME_MODE_SENSOR || event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) {
+            return
+        }
 
+        val currentTime = System.currentTimeMillis()
+        if ((currentTime - lastSensorUpdateTime) > sensorUpdateDelay) {
+            lastSensorUpdateTime = currentTime
+
+            val xAcceleration = event?.values?.get(0) ?: 0.0f // X-axis acceleration (includes gravity)
+            // Positive xAcceleration typically means device is tilted to its left (player moves right in portrait)
+            // Negative xAcceleration typically means device is tilted to its right (player moves left in portrait)
+            // This might need to be inverted based on your game's coordinate system or preference.
+
+            //Log.d("SensorDebug", "X: $xAcceleration") // For debugging tilt values
+
+            var direction = 0 // 0 for no move, -1 for left, 1 for right
+            if (xAcceleration > tiltThreshold) { // Tilt to device's left -> player moves right
+                direction = -1
+            } else if (xAcceleration < -tiltThreshold) { // Tilt to device's right -> player moves left
+                direction = 1
+            }
+            movementOccurred(direction)
+            /*if (direction != 0) {
+                // Attempt to move the player.
+                // The gameManager should handle lane boundaries.
+                val newLane = gameManager.movePlayerWithSensor(currentLane, direction, Constants.obstacleDimensions.obstacle_col_count)
+                if (newLane != currentLane) {
+                    currentLane = newLane
+                    refreshCarLayout()
+                }
+            }*/
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
+    }
+
+    fun endGame(){
+        //sends info for the leaderboard from this current playthrough
+        val intent = Intent(this, LeaderBoardActivity::class.java)
+
+        // Add the game mode and speed as extras to the Intent
+        intent.putExtra("SCORE", score)
+        // Start MainActivity
+        startActivity(intent)
+        finish()
+    }
+
+    private fun changeGridImage(){
+
+        for (rowIndex in 0 until Constants.obstacleDimensions.obstacle_row_count) {
+            for (colIndex in 0 until Constants.obstacleDimensions.obstacle_col_count)
+            {
+                if (mainGridPositions[rowIndex][colIndex] == 1)
+                {
+                    mainGridImages[rowIndex][colIndex].apply { //change the image of cell in the grid
+                        setImageResource(R.drawable.obstacle)
+                    }
+                }
+                else if(mainGridPositions[rowIndex][colIndex] == 2)
+                {
+                    mainGridImages[rowIndex][colIndex].apply {
+                        setImageResource(R.drawable.coin) //
+                    }
+                }
+            }
+        }
+
+
+
+    }
+    private fun setupSensors() {
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accelerometer == null) {
+            Log.e("MainActivity", "Accelerometer sensor not available!")
+        }
+    }
 }
