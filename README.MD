@@ -1,30 +1,90 @@
-Project: Lane Dodger - Android Course Part 1
-Course Context
-Welcome! This project represents Part 1 of an Android App Development course. It serves as a foundational exercise focusing on core game mechanics, user input, and basic game state management within the Android framework.
+# Lane Dodger 🚗💨
 
-Game Description 🚗💨
-Lane Dodger is a mobile game where the player controls a car moving along a five-lane road. The objective is to dodge incoming obstacles by switching lanes while trying to collect coins.
+**Android App Development Course - Part 1**
 
-Gameplay:
+A mobile lane-switching game where players dodge obstacles and collect coins while navigating a five-lane highway.
 
-The player's car moves continuously forward.
-Players can use on-screen buttons or the phone's accelerometer to move the car between the five available lanes.
-Obstacles and coins appear randomly in the lanes and move toward the player.
-The game ends when the player runs out of lives after colliding with obstacles.
-The game features a high-score table that saves the score along with the geographical location where the game was played.
-Current Features ✨
-Life System: The game ends after a fixed number of collisions with obstacles.
-Two Control Modes: Players can choose between button-based controls or motion sensor (accelerometer) controls for gameplay.
-Obstacle and Coin Spawning: Obstacles and collectible coins appear randomly in the lanes.
-Collision Detection: The game detects when the player's car hits an obstacle or a coin.
-Scoring System with Location: The game includes a scoring system. Each final score is saved with the device's current location to be displayed on the leaderboard.
-Leaderboard with Map Integration: A high-score screen displays a list of top scores. Selecting a score will focus the map on the location where it was achieved.
-Work In Progress (WIP) 🚧
-This is an early version, and many aspects are still under development, particularly the visual design. Items currently considered WIP include:
+## 📱 About
 
-🎨 Button Design: Colors, shapes, and styles of UI buttons.
-🚗 Car Image: Placeholder or basic graphic used for the player's car.
-🧱 Obstacle Images: Placeholder or basic graphics for obstacles.
-🖼️ Background Image(s): The visual backdrop for the road and environment.
-✨ General UI/UX: Overall look, feel, and user experience refinement.
-Future parts of the course will likely build upon this foundation, adding features like improved graphics and sound
+Lane Dodger is a foundational Android game project that focuses on core game mechanics, user input handling, and basic game state management. Players control a car continuously moving forward on a five-lane road, dodging obstacles and collecting coins to achieve high scores.
+
+## 🎮 Gameplay
+
+- **Objective:** Dodge incoming obstacles while collecting coins
+- **Controls:** Switch between five lanes using on-screen buttons or accelerometer
+- **Challenge:** Survive as long as possible with limited lives
+- **Scoring:** Earn points and compete on the location-based leaderboard
+
+## ✨ Current Features
+
+### Core Gameplay
+- **Life System:** Game ends after a fixed number of obstacle collisions
+- **Dual Control System:** 
+  - Button-based controls for precise movement
+  - Motion sensor (accelerometer) controls for immersive gameplay
+- **Dynamic Spawning:** Random obstacle and coin generation across lanes
+- **Collision Detection:** Accurate hit detection for obstacles and collectibles
+
+### Progression & Competition
+- **Scoring System:** Points-based progression with persistent high scores
+- **Location Integration:** Scores saved with geographical coordinates
+- **Interactive Leaderboard:** View top scores with map integration
+- **Map Focus:** Tap any score to see where it was achieved on the map
+
+## 🚧 Work In Progress
+
+This is an early development version with several visual elements still under refinement:
+
+- 🎨 **UI Design:** Button colors, shapes, and styling
+- 🚗 **Car Graphics:** Player vehicle artwork and animations  
+- 🧱 **Obstacle Assets:** Environmental hazard graphics
+- 🖼️ **Background Art:** Road and environment visuals
+- ✨ **UX Polish:** Overall user experience and interface improvements
+
+## 🛠️ Technical Focus
+
+This project emphasizes:
+- Android game development fundamentals
+- Touch and sensor input handling
+- Game state management
+- Location services integration
+- Data persistence for high scores
+- Map API integration
+
+## 🎯 Learning Objectives
+
+As Part 1 of an Android development course, this project covers:
+- Basic game loop implementation
+- UI component creation and management
+- Sensor data processing
+- Local data storage
+- Google Maps integration
+- Collision detection algorithms
+
+## 🚀 Future Development
+
+Upcoming course parts will expand on this foundation with:
+- Enhanced graphics and animations
+- Sound effects and music
+- Additional game modes
+- Performance optimizations
+- Advanced UI/UX design
+
+## 📋 Requirements
+
+- Android SDK
+- Android device or emulator
+- Location permissions for leaderboard features
+- Internet connection for map functionality
+
+## 🤝 Contributing
+
+This is an educational project. Feedback and suggestions for improvements are welcome as part of the learning process.
+
+## 📄 License
+
+Educational project - part of Android App Development course curriculum.
+
+---
+
+*Lane Dodger represents the foundational stage of mobile game development, focusing on core mechanics and Android framework integration.*
